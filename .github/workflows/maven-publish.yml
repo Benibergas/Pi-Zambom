@@ -39,7 +39,7 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: benisli/campeonato-ci:${{ github.sha }}
+        tags: benisli/pi-ac:${{ github.sha }}
 
     - name: executing remote ssh commands using password
       uses: appleboy/ssh-action@master
@@ -51,4 +51,4 @@ jobs:
         script: |
           docker stop campeonato
           docker rm --force campeonato
-          docker run -d -p 8080:8080 --network=rede --name campeonato benisli/campeonato-ci:${{ github.sha }}
+          docker run -d -p 8080:8080 --network=rede --name pi-ac benisli/pi-ac:${{ github.sha }}
