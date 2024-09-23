@@ -49,6 +49,6 @@ jobs:
         key: ${{ secrets.KEY_TEST }}
         port: 22
         script: |
-          docker stop campeonato
-          docker rm --force campeonato
+          docker stop pi-ac
+          docker rm --force pi-ac
           docker run -d -p 8080:8080 --network=rede --name pi-ac benisli/pi-ac:${{ github.sha }}
