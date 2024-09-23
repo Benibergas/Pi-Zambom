@@ -1,9 +1,5 @@
 package insper.pi_zambom;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -13,14 +9,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class ProjetoServiceTest {
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-    @InjectMocks
-    private ProjetoService projetoService;
+class ProjetoServiceTest {
 
     @Mock
     private ProjetoRepository projetoRepository;
@@ -28,85 +24,132 @@ public class ProjetoServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
+    @InjectMocks
+    private ProjetoService projetoService;
+
     @BeforeEach
-    public void setup() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    public void testCadastrarProjeto_GerenteExistente() {
+    void testCadastrarProjetoSucesso() {
         Projeto projeto = new Projeto();
         projeto.setGerenteCpf("12345678900");
-        when(restTemplate.getForEntity(any(String.class), eq(Pessoa.class)))
+        projeto.setStatus(ProjetoStatus.PLANEJAMENTO);
+
+        when(restTemplate.getForEntity(anyString(), eq(Pessoa.class)))
                 .thenReturn(new ResponseEntity<>(new Pessoa(), HttpStatus.OK));
         when(projetoRepository.save(any(Projeto.class))).thenReturn(projeto);
 
-        Projeto result = projetoService.cadastrarProjeto(projeto);
+        Projeto resultado = projetoService.cadastrarProjeto(projeto);
 
-        assertNotNull(result);
-        assertEquals(projeto.getGerenteCpf(), result.getGerenteCpf());
+        assertNotNull(resultado);
+        assertEquals(ProjetoStatus.PLANEJAMENTO, resultado.getStatus());
+        verify(projetoRepository).save(projeto);
     }
 
     @Test
-    public void testCadastrarProjeto_GerenteInexistente() {
+    void testCadastrarProjetoGerenteNaoExiste() {
         Projeto projeto = new Projeto();
         projeto.setGerenteCpf("12345678900");
-        when(restTemplate.getForEntity(any(String.class), eq(Pessoa.class)))
+        projeto.setStatus(ProjetoStatus.PLANEJAMENTO);
+
+        when(restTemplate.getForEntity(anyString(), eq(Pessoa.class)))
                 .thenReturn(new ResponseEntity<>(HttpStatus.NOT_FOUND));
 
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            projetoService.cadastrarProjeto(projeto);
-        });
-
-        assertEquals("Gerente não existe!", exception.getMessage());
+        assertThrows(RuntimeException.class, () -> projetoService.cadastrarProjeto(projeto));
     }
 
     @Test
-    public void testListarProjetos_ComStatus() {
-        List<Projeto> projetos = new ArrayList<>();
-        Projeto projeto = new Projeto();
-        projeto.setStatus(ProjetoStatus.EXECUCAO);
-        projetos.add(projeto);
+    void testListarProjetosComStatus() {
+        ProjetoStatus status = ProjetoStatus.EXECUCAO;
+        List<Projeto> projetos = Arrays.asList(new Projeto(), new Projeto());
 
-        when(projetoRepository.findByStatus(ProjetoStatus.EXECUCAO)).thenReturn(projetos);
+        when(projetoRepository.findByStatus(status)).thenReturn(projetos);
 
-        List<Projeto> result = projetoService.listarProjetos(ProjetoStatus.EXECUCAO);
+        List<Projeto> resultado = projetoService.listarProjetos(status);
 
-        assertEquals(1, result.size());
-        assertEquals(ProjetoStatus.EXECUCAO, result.get(0).getStatus());
+        assertEquals(2, resultado.size());
+        verify(projetoRepository).findByStatus(status);
     }
 
     @Test
-    public void testAdicionarPessoa_ProjetoExistente() {
+    void testListarProjetosSemStatus() {
+        List<Projeto> projetos = Arrays.asList(new Projeto(), new Projeto(), new Projeto());
+
+        when(projetoRepository.findAll()).thenReturn(projetos);
+
+        List<Projeto> resultado = projetoService.listarProjetos(null);
+
+        assertEquals(3, resultado.size());
+        verify(projetoRepository).findAll();
+    }
+
+    @Test
+    void testAdicionarPessoaSucesso() {
         Projeto projeto = new Projeto();
         projeto.setId("1");
-        projeto.setStatus(ProjetoStatus.PLANEJAMENTO);
-        projeto.setPessoas(new ArrayList<>());
+        projeto.setStatus(ProjetoStatus.EXECUCAO);
 
         when(projetoRepository.findById("1")).thenReturn(Optional.of(projeto));
-        when(restTemplate.getForEntity(any(String.class), eq(Pessoa.class)))
+        when(restTemplate.getForEntity(anyString(), eq(Pessoa.class)))
                 .thenReturn(new ResponseEntity<>(new Pessoa(), HttpStatus.OK));
         when(projetoRepository.save(any(Projeto.class))).thenReturn(projeto);
 
-        Projeto result = projetoService.adicionarPessoa("1", "12345678900");
+        Projeto resultado = projetoService.adicionarPessoa("1", "12345678900");
 
-        assertNotNull(result);
-        assertEquals(1, result.getPessoas().size());
+        assertNotNull(resultado);
+        assertEquals(1, resultado.getPessoas().size());
+        verify(projetoRepository).save(projeto);
     }
 
     @Test
-    public void testAdicionarPessoa_ProjetoFinalizado() {
+    void testAdicionarPessoaProjetoNaoEncontrado() {
+        when(projetoRepository.findById("1")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> projetoService.adicionarPessoa("1", "12345678900"));
+    }
+
+    @Test
+    void testAdicionarPessoaProjetoFinalizado() {
         Projeto projeto = new Projeto();
         projeto.setId("1");
         projeto.setStatus(ProjetoStatus.FINALIZADO);
 
         when(projetoRepository.findById("1")).thenReturn(Optional.of(projeto));
 
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            projetoService.adicionarPessoa("1", "12345678900");
-        });
+        assertThrows(RuntimeException.class, () -> projetoService.adicionarPessoa("1", "12345678900"));
+    }
 
-        assertEquals("Não é possível adicionar pessoas em projetos finalizados.", exception.getMessage());
+    @Test
+    void testAdicionarPessoaNaoExistente() {
+        Projeto projeto = new Projeto();
+        projeto.setId("1");
+        projeto.setStatus(ProjetoStatus.EXECUCAO);
+
+        when(projetoRepository.findById("1")).thenReturn(Optional.of(projeto));
+        when(restTemplate.getForEntity(anyString(), eq(Pessoa.class)))
+                .thenReturn(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+
+        assertThrows(RuntimeException.class, () -> projetoService.adicionarPessoa("1", "12345678900"));
+    }
+
+    @Test
+    void testAdicionarPessoaEmProjetoPlanejamento() {
+        Projeto projeto = new Projeto();
+        projeto.setId("1");
+        projeto.setStatus(ProjetoStatus.PLANEJAMENTO);
+
+        when(projetoRepository.findById("1")).thenReturn(Optional.of(projeto));
+        when(restTemplate.getForEntity(anyString(), eq(Pessoa.class)))
+                .thenReturn(new ResponseEntity<>(new Pessoa(), HttpStatus.OK));
+        when(projetoRepository.save(any(Projeto.class))).thenReturn(projeto);
+
+        Projeto resultado = projetoService.adicionarPessoa("1", "12345678900");
+
+        assertNotNull(resultado);
+        assertEquals(1, resultado.getPessoas().size());
+        verify(projetoRepository).save(projeto);
     }
 }
-
