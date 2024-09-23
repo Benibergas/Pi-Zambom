@@ -1,38 +1,22 @@
 package insper.pi_zambom;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Getter;
 import lombok.Setter;
 
-@Entity
+@Document(collection = "pessoas") // Nome da coleção no MongoDB
 @Getter
 @Setter
-
 public class Pessoa {
-    @Id
-    private String cpf;
 
+    @Id
+    private String cpf; // CPF como ID
+
+    @Field("nome")
     private String nome;
 
-    // Getters e Setters
-
-
-    public String getCpf() {
-        return cpf;
-    }
-
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
+    // Não é necessário incluir os métodos getters e setters aqui
+    // Eles serão gerados automaticamente pelo Lombok
 }

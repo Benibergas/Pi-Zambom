@@ -26,7 +26,7 @@ public class ProjetoController {
     }
 
     @PostMapping("/{id}/pessoas")
-    public ResponseEntity<Projeto> adicionarPessoa(@PathVariable Long id, @RequestParam String cpf) {
+    public ResponseEntity<Projeto> adicionarPessoa(@PathVariable String id, @RequestParam String cpf) {
         Projeto projeto = projetoService.adicionarPessoa(id, cpf);
         return ResponseEntity.ok(projeto);
     }

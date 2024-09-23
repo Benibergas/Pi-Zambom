@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.util.List;
-import insper.pi_zambom.Projeto;
 
 @Service
 public class ProjetoService {
@@ -30,7 +29,7 @@ public class ProjetoService {
         return projetoRepository.findAll();
     }
 
-    public Projeto adicionarPessoa(Long projetoId, String pessoaCpf) {
+    public Projeto adicionarPessoa(String projetoId, String pessoaCpf) {
         Projeto projeto = projetoRepository.findById(projetoId)
                 .orElseThrow(() -> new RuntimeException("Projeto não encontrado!"));
 
@@ -61,4 +60,3 @@ public class ProjetoService {
         }
     }
 }
-
